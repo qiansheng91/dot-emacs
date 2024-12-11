@@ -12,20 +12,38 @@
   :ensure t
   :config
   (general-create-definer leader-def
+    :keymaps '(normal insert visual emacs)
     :prefix "SPC")
 
   (leader-def
     :keymaps 'normal
     "SPC" '(execute-extended-command :which-key "eval")
     "f" '(:ignore t :which-key "file")
-    "s" '(:ignore t :which-key "search")))
+    "ff" '(find-file :which-key "find")
+    "fr" '(consult-recent-file :which-key "recent")
+    "b" '(:ignore t :which-key "buffer")
+    "bk" '(kill-current-buffer :which-key "close") 
+    "bb" '(consult-buffer :which-key "list")
+    "s" '(:ignore t :which-key "search")
+    "o" '(:ignore t :which-key "open")
+    "g" '(:ignore t :which-key "go")
+    "w" '(:ignore t :which-key "windows")
+    "i" '(:ignore t :which-key "insert")
+    "wr" '(evil-window-right :which-key "right")
+    "wl" '(evil-window-left :which-key "left")
+    "t" '(:ignore t :which-key "tab")
+    "ts" '(tab-switch :which-key "switch")
+    "pp" '(consult-yank-pop :which-key "yank pop")))
 
+(use-package format-all
+  :commands format-all-mode
+  :hook (prog-mode . format-all-mode))
 
 ;; Enable vertico
 (use-package vertico
   :custom
   (vertico-scroll-margin 10) ;; Different scroll margin
-  (vertico-count 20) ;; Show more candidates
+  (vertico-count 7) ;; Show more candidates
   (vertico-resize t) ;; Grow and shrink the Vertico minibuffer
   (vertico-cycle t) ;; Enable cycling for `vertico-next/previous'
   :init
@@ -86,10 +104,11 @@
 
   (leader-def
     :keymaps 'normal
-    "sb" '(consult-buffer :which-key "buffer")
     "ss" '(consult-line :which-key "line")
     "sf" '(consult-ripgrep :which-key "search")
-    "sr" '(consult-recent-file :which-key "recent"))
+    "sr" '(consult-recent-file :which-key "recent")
+    "ow" '(consult-buffer-other-window :which-key "open buffer")
+    "oe" '(eshell :which-key "eshell"))
    
   ;; :bind (;; C-c bindings in `mode-specific-map'
   ;;        ("C-c M-x" . consult-mode-command)
@@ -244,5 +263,122 @@
   (completion-styles '(orderless basic))
   (completion-category-defaults nil)
   (completion-category-overrides '((file (styles partial-completion)))))
+
+
+(use-package tree-sitter
+  :ensure t)
+
+(use-package tree-sitter-langs
+  :ensure t
+  :after (tree-sitter)
+  :config
+  (global-tree-sitter-mode)
+  (tree-sitter-require 'yaml))
+
+
+(use-package yasnippet
+  :ensure t
+  :after (corfu)
+  :config
+  (yas-global-mode 1))
+
+(use-package yasnippet-snippets
+  :ensure t
+  :after (yasnippet))
+;; TAB-only configuration
+(use-package corfu
+  :custom
+  (corfu-auto t)               ;; Enable auto completion
+  (corfu-preselect 'directory) ;; Select the first candidate, except for directories
+
+  :init
+  (global-corfu-mode)
+
+  :config
+  ;; Free the RET key for less intrusive behavior.
+  ;; Option 1: Unbind RET completely
+  ;; (keymap-unset corfu-map "RET")
+  ;; Option 2: Use RET only in shell modes
+  (keymap-set corfu-map "RET" `( menu-item "" nil :filter
+                                 ,(lambda (&optional _)
+                                    (and (derived-mode-p 'eshell-mode 'comint-mode)
+                                         #'corfu-send)))))
+
+;; Add extensions
+(use-package cape
+  ;; Bind prefix keymap providing all Cape commands under a mnemonic key.
+  ;; Press C-c p ? to for help.
+  :bind ("C-c p" . cape-prefix-map) ;; Alternative key: M-<tab>, M-p, M-+
+  ;; Alternatively bind Cape commands individually.
+  ;; :bind (("C-c p d" . cape-dabbrev)
+  ;;        ("C-c p h" . cape-history)
+  ;;        ("C-c p f" . cape-file)
+  ;;        ...)
+  :init
+  ;; Add to the global default value of `completion-at-point-functions' which is
+  ;; used by `completion-at-point'.  The order of the functions matters, the
+  ;; first function returning a result wins.  Note that the list of buffer-local
+  ;; completion functions takes precedence over the global list.
+  (add-hook 'completion-at-point-functions #'cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-file)
+  (add-hook 'completion-at-point-functions #'cape-elisp-block)
+  ;; (add-hook 'completion-at-point-functions #'cape-history)
+  ;; ...
+)
+
+;; A few more useful configurations...
+(use-package emacs
+  :custom
+  ;; TAB cycle if there are only few candidates
+  ;; (completion-cycle-threshold 3)
+
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (tab-always-indent 'complete)
+
+  ;; Emacs 30 and newer: Disable Ispell completion function.
+  ;; Try `cape-dict' as an alternative.
+  (text-mode-ispell-word-completion nil)
+
+  ;; Hide commands in M-x which do not apply to the current mode.  Corfu
+  ;; commands are hidden, since they are not used via M-x. This setting is
+  ;; useful beyond Corfu.
+  (read-extended-command-predicate #'command-completion-default-include-p))
+
+
+;; Use Dabbrev with Corfu!
+(use-package dabbrev
+  ;; Swap M-/ and C-M-/
+  :bind (("M-/" . dabbrev-completion)
+         ("C-M-/" . dabbrev-expand))
+  :config
+  (add-to-list 'dabbrev-ignored-buffer-regexps "\\` ")
+  ;; Since 29.1, use `dabbrev-ignored-buffer-regexps' on older.
+  (add-to-list 'dabbrev-ignored-buffer-modes 'doc-view-mode)
+  (add-to-list 'dabbrev-ignored-buffer-modes 'pdf-view-mode)
+  (add-to-list 'dabbrev-ignored-buffer-modes 'tags-table-mode))
+
+;; Optionally use the `orderless' completion style.
+(use-package orderless
+  :custom
+  ;; (orderless-style-dispatchers '(orderless-affix-dispatch))
+  ;; (orderless-component-separator #'orderless-escapable-split-on-space)
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides '((file (styles partial-completion)))))
+
+(use-package yasnippet-capf
+  :after cape
+  :config
+  (add-to-list 'completion-at-point-functions #'yasnippet-capf))
+
+(use-package projectile
+  :ensure t
+  :config
+  (projectile-mode +1))
+
+
+(use-package magit
+  :ensure t)
 
 (provide 'init-core)

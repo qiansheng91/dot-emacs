@@ -28,9 +28,18 @@
 (straight-use-package 'use-package)
 (setq straight-use-package-by-default t)
 
+(use-package exec-path-from-shell
+  :ensure t)
+
+(when (memq window-system '(mac ns x))
+  (exec-path-from-shell-initialize))
+
 (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 (setq custom-file (expand-file-name "auto-save-list/custom.el" user-emacs-directory))
 
 (require 'init-core)
 (require 'init-theme)
 (require 'init-keybinding)
+(require 'init-org)
+(require 'init-llm)
+(require 'init-yaml)
