@@ -43,3 +43,6 @@
 (require 'init-org)
 (require 'init-llm)
 (require 'init-yaml)
+(require 'init-feeds)
+(require 'init-python)
+(require 'init-projectile)

@@ -1,10 +1,14 @@
 (use-package emacs
   :config
   (setq inhibit-startup-message t
-	line-number-mode t
-	backup-inhibited t
-	auto-save-default nil)
-  
+		line-number-mode t
+		backup-inhibited t
+		tramp-verbose 1
+		tramp-completion-reread-directory-timeout nil
+		auto-save-default nil)
+  (setq-default tab-width 4)
+  (global-display-line-numbers-mode 1)
+  (global-visual-line-mode 1)
   (which-key-mode 1)
   (recentf-mode 1))
 
@@ -17,23 +21,7 @@
 
   (leader-def
     :keymaps 'normal
-    "SPC" '(execute-extended-command :which-key "eval")
-    "f" '(:ignore t :which-key "file")
-    "ff" '(find-file :which-key "find")
-    "fr" '(consult-recent-file :which-key "recent")
-    "b" '(:ignore t :which-key "buffer")
-    "bk" '(kill-current-buffer :which-key "close") 
-    "bb" '(consult-buffer :which-key "list")
-    "s" '(:ignore t :which-key "search")
-    "o" '(:ignore t :which-key "open")
-    "g" '(:ignore t :which-key "go")
-    "w" '(:ignore t :which-key "windows")
-    "i" '(:ignore t :which-key "insert")
-    "wr" '(evil-window-right :which-key "right")
-    "wl" '(evil-window-left :which-key "left")
-    "t" '(:ignore t :which-key "tab")
-    "ts" '(tab-switch :which-key "switch")
-    "pp" '(consult-yank-pop :which-key "yank pop")))
+    "SPC" '(execute-extended-command :which-key "eval"))) 
 
 (use-package format-all
   :commands format-all-mode
@@ -87,7 +75,7 @@
   ;; available in the *Completions* buffer, add it to the
   ;; `completion-list-mode-map'.
   :bind (:map minibuffer-local-map
-         ("M-A" . marginalia-cycle))
+			  ("M-A" . marginalia-cycle))
 
   ;; The :init section is always executed.
   :init
@@ -107,9 +95,8 @@
     "ss" '(consult-line :which-key "line")
     "sf" '(consult-ripgrep :which-key "search")
     "sr" '(consult-recent-file :which-key "recent")
-    "ow" '(consult-buffer-other-window :which-key "open buffer")
     "oe" '(eshell :which-key "eshell"))
-   
+
   ;; :bind (;; C-c bindings in `mode-specific-map'
   ;;        ("C-c M-x" . consult-mode-command)
   ;;        ("C-c h" . consult-history)
@@ -161,7 +148,7 @@
   ;;        ;; Minibuffer history
   ;;        :map minibuffer-local-map
   ;;        ("M-s" . consult-history)                 ;; orig. next-matching-history-element
-  ;;        ("M-r" . consult-history))     
+  ;;        ("M-r" . consult-history))
   ;; orig. previous-matching-history-element
 
   ;; Enable automatic preview at point in the *Completions* buffer. This is
@@ -212,7 +199,7 @@
   ;; Optionally make narrowing help available in the minibuffer.
   ;; You may want to use `embark-prefix-help-command' or which-key instead.
   ;; (keymap-set consult-narrow-map (concat consult-narrow-key " ?") #'consult-narrow-help)
-)
+  )
 
 (use-package marginalia
   :ensure t
@@ -282,12 +269,17 @@
   :config
   (yas-global-mode 1))
 
+;; :general
+;; (leader-def
+;;   "is" '(yas-insert-snippet :which-key "snippet")))
+
 (use-package yasnippet-snippets
   :ensure t
   :after (yasnippet))
 ;; TAB-only configuration
 (use-package corfu
   :custom
+  (corfu-min-width 1)
   (corfu-auto t)               ;; Enable auto completion
   (corfu-preselect 'directory) ;; Select the first candidate, except for directories
 
@@ -324,7 +316,7 @@
   (add-hook 'completion-at-point-functions #'cape-elisp-block)
   ;; (add-hook 'completion-at-point-functions #'cape-history)
   ;; ...
-)
+  )
 
 ;; A few more useful configurations...
 (use-package emacs
@@ -372,13 +364,54 @@
   :config
   (add-to-list 'completion-at-point-functions #'yasnippet-capf))
 
-(use-package projectile
+(use-package magit
   :ensure t
   :config
-  (projectile-mode +1))
+  (with-eval-after-load 'magit-mode
+	(add-hook 'after-save-hook 'magit-after-save-refresh-status t)))
+
+(use-package nerd-icons-corfu
+  :ensure t
+  :config
+  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)
+  (setq nerd-icons-corfu-mapping
+		'((array :style "cod" :icon "symbol_array" :face font-lock-type-face)
+          (boolean :style "cod" :icon "symbol_boolean" :face font-lock-builtin-face)
+          ;; ...
+          (t :style "cod" :icon "code" :face font-lock-warning-face))))
 
 
-(use-package magit
+(use-package expand-region
+  :ensure t
+  :bind ("C-=" . er/expand-region))
+(use-package all-the-icons
+  :ensure t
+  :if (display-graphic-p))
+
+(use-package treemacs
   :ensure t)
+
+(use-package treemacs-evil
+  :after (treemacs evil)
+  :ensure t)
+
+(use-package goto-chg
+  :ensure t)
+
+(use-package evil
+  :ensure t
+  :init
+  (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+  (setq evil-want-keybinding nil)
+  :config
+  (evil-mode 1))
+
+(use-package evil-collection
+  :after (evil)
+  :ensure t
+  :config
+  (evil-collection-init)
+  (evil-collection-init 'dired))
+
 
 (provide 'init-core)
